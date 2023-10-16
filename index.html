@@ -30,6 +30,20 @@
         <option value="Tous">Tous</option>
       </select>
     </div>
+
+    <div id="joueur-filter-container" class="mb-3 text-center" style="display:none;">
+      <label for="joueur-filter">Sélectionner un joueur :</label>
+      <select id="joueur-filter">
+        <option value="Tous">Tous</option>
+      </select>
+    </div>
+
+    <div id="club-filter-container" class="mb-3 text-center" style="display:none;">
+      <label for="club-filter">Sélectionner un club :</label>
+      <select id="club-filter">
+        <option value="Tous">Tous</option>
+      </select>
+    </div>
   </div>
 
   <div class="container mt-5">
@@ -46,27 +60,22 @@
       return match ? match[1] : null;
     }
 
-    // Fonction pour extraire les valeurs distinctes de la colonne 'film'
-    function getDistinctFilms(data) {
-      const films = data.map(row => row.split(',')[3]).filter(film => film !== "");
-      return [...new Set(films)];
-    }
 
     // Fonction pour mettre à jour le menu déroulant des films
-    function updateFilmFilter(films) {
-      const filmFilter = document.getElementById('film-filter');
-      filmFilter.innerHTML = '<option value="Tous">Tous</option>';
+    function updateFilter(type, data) {
+      const filter = document.getElementById(`${type}-filter`);
+      filter.innerHTML = '<option value="Tous">Tous</option>';
 
-      films.forEach(film => {
+      data.forEach(film => {
         const option = document.createElement('option');
         option.value = film;
         option.textContent = film;
-        filmFilter.appendChild(option);
+        filter.appendChild(option);
       });
     }
 
     // Fonction pour afficher les données en fonction du filtre sélectionné
-    function displayData(selectedFilter, selectedFilm = '') {
+    function displayData(selectedFilter, selectedValue = 'Tous') {
       fetch(sheetURL)
         .then(response => response.text())
         .then(data => {
@@ -115,12 +124,14 @@
 
 
             console.log(film)
-            console.log(selectedFilter)
-            if (selectedFilter === "film") {
-              console.log(selectedFilm)
-            }
+            console.log('s ' + selectedValue)
+            console.log('f ' + selectedFilter)
+
             // Afficher les informations uniquement si le filtre correspond à "Tous" ou au champ sélectionné
-            if (selectedFilter === "Tous" || (selectedFilter === "film" && film === selectedFilm)) {
+            if (selectedFilter === "Tous" || selectedValue === "Tous" ||
+              (selectedFilter === "film" && film === selectedValue) ||
+              (selectedFilter === "joueur" && jouer === selectedValue) ||
+              (selectedFilter === "club" && club === selectedValue)) {
               divCol4.appendChild(img);
               divCol4.appendChild(nomP);
               divCol4.appendChild(emailP);
@@ -147,15 +158,52 @@
       const selectedFilter = filter.value;
       if (selectedFilter === "Tous") {
         document.getElementById('film-filter-container').style.display = 'none';
+        document.getElementById('joueur-filter-container').style.display = 'none';
+        document.getElementById('club-filter-container').style.display = 'none';
         displayData(selectedFilter);
       } else if (selectedFilter === "film") {
         document.getElementById('film-filter-container').style.display = 'block';
+        document.getElementById('joueur-filter-container').style.display = 'none';
+        document.getElementById('club-filter-container').style.display = 'none';
         fetch(sheetURL)
           .then(response => response.text())
           .then(data => {
             const rows = data.split('\n');
-            const distinctFilms = getDistinctFilms(rows);
-            updateFilmFilter(distinctFilms);
+            const donnees = rows.map(row => row.split(',')[3]).filter(d => d !== "");
+            const distinctData = [...new Set(donnees)];
+            updateFilter('film', distinctData);
+            displayData(selectedFilter);
+          })
+          .catch(error => {
+            console.error('Error fetching data:', error);
+          });
+      } else if (selectedFilter === "joueur") {
+        document.getElementById('film-filter-container').style.display = 'none';
+        document.getElementById('joueur-filter-container').style.display = 'block';
+        document.getElementById('club-filter-container').style.display = 'none';
+        fetch(sheetURL)
+          .then(response => response.text())
+          .then(data => {
+            const rows = data.split('\n');
+            const donnees = rows.map(row => row.split(',')[5]).filter(d => d !== "");
+            const distinctData = [...new Set(donnees)];
+            updateFilter('joueur', distinctData);
+            displayData(selectedFilter);
+          })
+          .catch(error => {
+            console.error('Error fetching data:', error);
+          });
+      } else if (selectedFilter === "club") {
+        document.getElementById('film-filter-container').style.display = 'none';
+        document.getElementById('joueur-filter-container').style.display = 'none';
+        document.getElementById('club-filter-container').style.display = 'block';
+        fetch(sheetURL)
+          .then(response => response.text())
+          .then(data => {
+            const rows = data.split('\n');
+            const donnees = rows.map(row => row.split(',')[6]).filter(d => d !== "");
+            const distinctData = [...new Set(donnees)];
+            updateFilter('club', distinctData);
             displayData(selectedFilter);
           })
           .catch(error => {
@@ -163,19 +211,30 @@
           });
       } else {
         document.getElementById('film-filter-container').style.display = 'none';
+        document.getElementById('joueur-filter-container').style.display = 'none';
+        document.getElementById('club-filter-container').style.display = 'none';
         displayData(selectedFilter);
       }
     });
 
-    // Écouteur d'événements pour le changement de filtre de films
     const filmFilter = document.getElementById('film-filter');
     filmFilter.addEventListener('change', () => {
       const selectedFilm = filmFilter.value;
       displayData('film', selectedFilm);
-      location.href = `#${selectedFilm.replace(' ', '')}`; // Rediriger vers la section de filtre
     });
 
-    // Afficher toutes les données initialement
+    const clubFilter = document.getElementById('club-filter');
+    clubFilter.addEventListener('change', () => {
+      const selectedClub = clubFilter.value;
+      displayData('club', selectedClub);
+    });
+
+    const joueurFilter = document.getElementById('joueur-filter');
+    joueurFilter.addEventListener('change', () => {
+      const selectedJoueur = joueurFilter.value;
+      displayData('joueur', selectedJoueur);
+    });
+
     displayData("Tous");
   </script>
 </body>
